@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cyber Trivia Wheel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A1A1A;
+    --panel:#FFFFFF;
+    --panel-2:#F3ECDF;
+    --brand:#E5AE60;
+    --success:#3F8F5F;
+    --error:#C1573B;
+    --text:#1A1A1A;
+    --muted:#78726A;
+    --ring: 0 0 0 3px rgba(229,174,96,0.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background: radial-gradient(circle at 50% -10%, #FFFDF8 0%, #FAF4E9 55%);
+    color:var(--text);
+    font-family:'Inter', system-ui, sans-serif;
+    display:flex;
+    justify-content:center;
+    padding: clamp(20px, 5vh, 48px) 16px 40px;
+  }
+  .stage{
+    width:100%;
+    max-width:420px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 20px;
+  }
+  .logo{
+    width: 64px;
+    height:64px;
+    margin-bottom:4px;
+  }
+  .intro{ text-align:center; }
+  .kicker{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:500;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    color: var(--brand);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    line-height:1.15;
+    margin:0 0 8px;
+    color: var(--ink);
+  }
+  .sub{ color:var(--muted); font-size:0.92rem; margin:0; line-height:1.5; }
+
+  .wheel-wrap{
+    position:relative;
+    width:min(84vw, 320px);
+    aspect-ratio:1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .pointer{
+    position:absolute;
+    top:-6px; left:50%;
+    transform:translateX(-50%);
+    width:0; height:0;
+    border-left:14px solid transparent;
+    border-right:14px solid transparent;
+    border-top:22px solid var(--brand);
+    z-index:5;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+  .wheel{
+    position:relative;
+    width:100%; height:100%;
+    border-radius:50%;
+    padding:10px;
+    background: linear-gradient(145deg, #F1D9AC, #DA9F49);
+    box-shadow: 0 18px 36px rgba(0,0,0,0.16), inset 0 0 0 1px rgba(0,0,0,0.05);
+  }
+  .wheel-inner{
+    position:relative;
+    width:100%; height:100%;
+    border-radius:50%;
+    overflow:hidden;
+    transition: transform 3.4s cubic-bezier(0.17, 0.89, 0.24, 1);
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.06);
+  }
+  .label{ position:absolute; top:50%; left:50%; width:0; height:0; transform-origin: 0 0; }
+  .label span{
+    position:absolute; top:0;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size: 0.64rem;
+    line-height:1.25;
+    color: var(--text);
+    width: 72px;
+    display:block;
+    white-space:normal;
+  }
+
+  .qr-section{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    margin-top:4px;
+  }
+  #gameSection{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 24px;
+    width:100%;
+  }
+  #gameSection[hidden]{ display:none; }
+  .qr-btn{
+    background:none;
+    border: 1px solid rgba(0,0,0,0.18);
+    color: var(--brand);
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.85rem;
+    padding: 10px 20px;
+    border-radius: 999px;
+    cursor:pointer;
+  }
+  .qr-btn:focus-visible{ outline:none; box-shadow: var(--ring); }
+  .qr-panel{
+    width:100%;
+    background: var(--panel);
+    border-radius:16px;
+    padding: 26px 22px;
+    text-align:center;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .qr-panel[hidden]{ display:none; }
+  #qrcode{
+    display:flex;
+    justify-content:center;
+    margin: 0 auto 16px;
+    background:#fff;
+    padding:16px;
+    border-radius:12px;
+    width:fit-content;
+  }
+  .qr-note{
+    color: var(--muted);
+    font-size:0.78rem;
+    line-height:1.5;
+    margin:0;
+  }
+  .qr-warning{
+    color: var(--error);
+    font-size:0.82rem;
+    line-height:1.5;
+    margin:0;
+  }
+  .hub{
+    position:absolute; top:50%; left:50%;
+    width:64px; height:64px; margin:-32px 0 0 -32px;
+    border-radius:50%;
+    background: var(--ink);
+    border: none;
+    box-shadow: 0 0 0 4px var(--panel-2), 0 4px 10px rgba(0,0,0,0.5);
+    z-index:4;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    cursor:pointer;
+    transition: transform 0.15s ease;
+    padding:0;
+  }
+  .hub:hover:not(:disabled){ transform: scale(1.06); }
+  .hub:active:not(:disabled){ transform: scale(0.96); }
+  .hub:focus-visible{ outline:none; box-shadow: var(--ring), 0 0 0 4px var(--panel-2), 0 4px 10px rgba(0,0,0,0.5); }
+  .hub:disabled{ cursor:not-allowed; opacity:0.7; }
+  .hub svg{ width:18px; height:18px; }
+  .hub-label{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:0.48rem;
+    letter-spacing:0.05em;
+    color: var(--brand);
+    line-height:1;
+  }
+
+  .spin-btn{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    color: var(--ink);
+    background: var(--brand);
+    border:none;
+    border-radius: 999px;
+    padding: 14px 40px;
+    cursor:pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+    box-shadow: 0 8px 20px rgba(76,201,192,0.25);
+  }
+  .spin-btn:hover{ transform: translateY(-1px); }
+  .spin-btn:active{ transform: translateY(1px); }
+  .spin-btn:focus-visible{ outline:none; box-shadow: var(--ring), 0 8px 20px rgba(76,201,192,0.25); }
+  .spin-btn:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+
+  .result-card{
+    width:100%;
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    text-align:center;
+    animation: reveal 0.4s ease;
+  }
+  @keyframes reveal{ from{ opacity:0; transform: translateY(6px); } to{ opacity:1; transform: translateY(0); } }
+  .result-label{ margin:0 0 10px; font-size:0.72rem; color: var(--brand); font-weight:600; letter-spacing:0.03em; }
+  .prize-badge{
+    display:inline-block;
+    margin: 0 0 14px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:0.85rem;
+  }
+  .prize-badge[hidden]{ display:none; }
+
+  .confetti-layer{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:60;
+  }
+  .confetti-piece{
+    position:absolute;
+    top:50%;
+    left:50%;
+    font-size:1.5rem;
+    opacity:0;
+    animation: confetti-burst 1.5s ease-out forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes confetti-burst{
+    0%{ transform: translate(-50%,-50%) scale(0.3) rotate(0deg); opacity:0; }
+    12%{ opacity:1; }
+    100%{ transform: translate(var(--tx), var(--ty)) scale(1) rotate(var(--rot)); opacity:0; }
+  }
+  .result-text{ margin:0 0 16px; font-size:1.02rem; font-weight:500; line-height:1.45; text-align:left; }
+
+  .quiz-options{ display:flex; flex-direction:column; gap:9px; margin-bottom:6px; }
+  .quiz-option{
+    text-align:left;
+    padding:11px 14px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,0.14);
+    background: var(--panel-2);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    font-size:0.88rem;
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .quiz-option:hover:not(:disabled){ border-color: var(--brand); }
+  .quiz-option:disabled{ cursor:default; }
+  .quiz-option.correct{ border-color: var(--success); background: rgba(63,143,95,0.14); }
+  .quiz-option.incorrect{ border-color: var(--error); background: rgba(193,87,59,0.14); }
+  .quiz-option:focus-visible{ outline:none; box-shadow: var(--ring); }
+
+  .quiz-explain{ margin:14px 0 18px; font-size:0.84rem; color:var(--muted); line-height:1.55; text-align:left; }
+  .quiz-explain strong{ color:var(--text); }
+  .quiz-explain[hidden]{ display:none; }
+
+  .again-btn{
+    background:none;
+    border: 1px solid rgba(0,0,0,0.18);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    font-weight:500;
+    font-size:0.85rem;
+    padding: 8px 18px;
+    border-radius: 999px;
+    cursor:pointer;
+  }
+  .again-btn:focus-visible{ outline:none; box-shadow: var(--ring); }
+
+  .booth-note{ color: var(--muted); font-size:0.78rem; text-align:center; margin:6px 0 0; }
+
+  .register-card{
+    width:100%;
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    text-align:center;
+  }
+  .register-label{
+    margin:0 0 14px;
+    font-size:0.72rem;
+    color: var(--brand);
+    font-weight:600;
+    letter-spacing:0.03em;
+  }
+  .register-field{
+    width:100%;
+    background: var(--panel-2);
+    border: 1px solid rgba(0,0,0,0.14);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    font-size:0.92rem;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom:10px;
+  }
+  .register-field::placeholder{ color: var(--muted); }
+  .register-field:focus-visible{ outline:none; box-shadow: var(--ring); }
+  .register-submit{
+    width:100%;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:0.95rem;
+    color: var(--ink);
+    background: var(--brand);
+    border:none;
+    border-radius: 999px;
+    padding: 13px 0;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .register-note{
+    margin: 10px 0 0;
+    font-size:0.8rem;
+    color: var(--error);
+    min-height: 1em;
+  }
+
+  .admin-link{
+    background:none;
+    border:none;
+    color: var(--muted);
+    font-size:0.72rem;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:4px;
+  }
+  .admin-panel{
+    width:100%;
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .admin-panel[hidden]{ display:none; }
+  .admin-title{
+    margin:0 0 12px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:0.95rem;
+  }
+  .admin-note{
+    color: var(--muted);
+    font-size:0.78rem;
+    line-height:1.5;
+    margin: 0 0 14px;
+  }
+  .admin-entries{
+    max-height: 240px;
+    overflow-y:auto;
+    margin-bottom:14px;
+  }
+  .admin-entry{
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    font-size:0.85rem;
+  }
+  .admin-entry:last-child{ border-bottom:none; }
+  .admin-entry .name{ font-weight:600; }
+  .admin-entry .email{ color: var(--muted); }
+  .admin-entry .time{ color: var(--muted); font-size:0.72rem; }
+  .admin-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .admin-btn{
+    background: var(--panel-2);
+    border: 1px solid rgba(0,0,0,0.14);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    font-weight:500;
+    font-size:0.82rem;
+    padding: 9px 16px;
+    border-radius: 999px;
+    cursor:pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce){ .wheel-inner{ transition-duration: 0.6s; } }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="intro">
+    <img class="logo" src="data:image/png;base64,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" alt="CHS logo">
+    <h1>Spin for a chance to Win</h1>
+    <p class="sub">Land on a topic, answer the question, see how you did.</p>
+  </div>
+
+  <div class="register-card" id="registerCard">
+    <p class="register-label">Enter to play</p>
+    <input class="register-field" id="regName" type="text" placeholder="Full name" autocomplete="name">
+    <input class="register-field" id="regEmail" type="email" placeholder="Email address" autocomplete="email">
+    <button class="register-submit" id="regSubmit">Start the game</button>
+    <p class="register-note" id="registerNote"></p>
+  </div>
+
+  <div class="register-card" id="alreadyPlayedCard" hidden>
+    <p class="register-label">Thanks for playing!</p>
+    <p class="sub">You've already used your spin on this device. Come find us at the booth if you'd like to chat more.</p>
+  </div>
+
+  <div id="gameSection" hidden>
+    <div class="wheel-wrap">
+      <div class="pointer" aria-hidden="true"></div>
+      <div class="wheel">
+        <div class="wheel-inner" id="wheelInner"></div>
+      </div>
+      <button class="hub" id="spinBtn" aria-label="Spin the wheel">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3z" stroke="#E5AE60" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        <span class="hub-label">SPIN</span>
+      </button>
+    </div>
+
+    <div class="result-card" id="resultCard" hidden aria-live="polite">
+      <p class="result-label" id="resultBadge">TOPIC</p>
+      <p class="prize-badge" id="prizeBadge" hidden></p>
+      <p class="result-text" id="resultText"></p>
+      <div class="quiz-options" id="quizOptions"></div>
+      <p class="quiz-explain" id="quizExplain" hidden></p>
+      <p class="booth-note" id="spinLockedNote" hidden>You've used your one spin &mdash; thanks for playing!</p>
+    </div>
+
+    <p class="booth-note">One question per spin, come say hi at our booth</p>
+
+    <div class="qr-section">
+      <button class="qr-btn" id="qrBtn">Get QR code for this page</button>
+      <div class="qr-panel" id="qrPanel" hidden>
+        <div id="qrcode"></div>
+        <p class="qr-note" id="qrNote">Scan this to open the wheel on your phone. Print it for your booth sign.</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="admin-link" id="adminLink">Admin</button>
+  <div class="admin-panel" id="adminPanel" hidden>
+    <p class="admin-title">Admin: registered players</p>
+    <p class="admin-note" id="adminGate">Entries are only visible on the device they were saved on. Enter the admin password to view them.</p>
+    <input class="register-field" id="adminPassword" type="password" placeholder="Admin password">
+    <button class="admin-btn" id="adminUnlock">View list</button>
+
+    <div id="adminListWrap" hidden>
+      <p class="admin-note" id="adminCount"></p>
+      <div class="admin-entries" id="adminEntries"></div>
+      <div class="admin-actions">
+        <button class="admin-btn" id="adminExport">Download CSV</button>
+        <button class="admin-btn" id="adminClear">Clear list (this device)</button>
+        <button class="admin-btn" id="adminResetLock">Reset play lock (this device)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+  const categories = [
+    { name: "Password", short: "Password", prize: "Pen", questions: [
+      { type:'mc', q:"What makes a password strong?", options:[{key:'A',text:"Your pet's name"},{key:'B',text:"A mix of letters, numbers, symbols, and length"},{key:'C',text:'"password123"'},{key:'D',text:"Your birthday"}], correct:'B' },
+      { type:'tf', q:"True or False: Using the same password for every account is safe if it's long.", correct:'False', explain:"Reuse means one breach exposes everything." }
+    ]},
+    { name: "Irish Trivia", short: "Irish Trivia", prize: "Notebook", questions: [
+      { type:'mc', q:"What is the capital of Ireland?", options:[{key:'A',text:"Cork"},{key:'B',text:"Galway"},{key:'C',text:"Dublin"},{key:'D',text:"Belfast"}], correct:'C' },
+      { type:'tf', q:"True or False: St. Patrick's Day is celebrated on March 17th.", correct:'True' }
+    ]},
+    { name: "Soc. Eng.", short: "Soc. Eng.", prize: "Notebook", questions: [
+      { type:'mc', q:'What is "social engineering" in cybersecurity?', options:[{key:'A',text:"Building social media apps"},{key:'B',text:"Manipulating people into giving up confidential info"},{key:'C',text:"Networking events"},{key:'D',text:"Team building"}], correct:'B' },
+      { type:'tf', q:'True or False: A caller claiming to be "IT support" asking for your password is a common scam tactic.', correct:'True' }
+    ]},
+    { name: "AI", short: "AI", prize: "Pen", questions: [
+      { type:'mc', q:'What does "AI" stand for?', options:[{key:'A',text:"Artificial Intelligence"},{key:'B',text:"Automated Interface"},{key:'C',text:"Advanced Internet"},{key:'D',text:"Applied Informatics"}], correct:'A' },
+      { type:'tf', q:"True or False: AI models can sometimes produce incorrect or made-up information, known as \"hallucination.\"", correct:'True' }
+    ]},
+    { name: "Malware", short: "Malware", prize: "Notebook", questions: [
+      { type:'mc', q:"What is ransomware?", options:[{key:'A',text:"Software that locks your files until you pay"},{key:'B',text:"A free antivirus tool"},{key:'C',text:"A type of Wi-Fi"},{key:'D',text:"A backup tool"}], correct:'A' },
+      { type:'mc', q:"How does malware often spread?", options:[{key:'A',text:"Infected email attachments"},{key:'B',text:"Fake software downloads"},{key:'C',text:"Malicious USB drives"},{key:'D',text:"All of the above"}], correct:'D' }
+    ]},
+    { name: "Jackpot", short: "JACKPOT", jackpot: true }
+  ];
+
+  const wheelInner = document.getElementById('wheelInner');
+  const spinBtn = document.getElementById('spinBtn');
+  const resultCard = document.getElementById('resultCard');
+  const resultBadge = document.getElementById('resultBadge');
+  const resultText = document.getElementById('resultText');
+  const quizOptions = document.getElementById('quizOptions');
+  const quizExplain = document.getElementById('quizExplain');
+
+  const colorA = '#FFFFFF';
+  const colorB = '#EFC583';
+
+  // Jackpot gets a smaller slice of the wheel than the 5 topics.
+  function segWeight(cat){ return cat.jackpot ? 0.4 : 1; }
+
+  function computeSegments(){
+    const totalWeight = categories.reduce((sum, c) => sum + segWeight(c), 0);
+    let cursor = 0;
+    return categories.map(cat => {
+      const span = 360 * segWeight(cat) / totalWeight;
+      const seg = { start: cursor, end: cursor + span, mid: cursor + span/2, span };
+      cursor += span;
+      return seg;
+    });
+  }
+
+  const segments = computeSegments();
+
+  function buildWheel(){
+    const stops = [];
+    segments.forEach((seg, i) => {
+      stops.push(`${i % 2 === 0 ? colorA : colorB} ${seg.start}deg ${seg.end}deg`);
+    });
+    wheelInner.style.background = `conic-gradient(from 0deg, ${stops.join(',')})`;
+
+    wheelInner.querySelectorAll('.label').forEach(el => el.remove());
+
+    const radius = wheelInner.clientWidth / 2;
+    const midRadius = radius * 0.62;
+
+    categories.forEach((cat, i) => {
+      const mid = segments[i].mid;
+      const flip = mid > 90 && mid < 270;
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.style.transform = `rotate(${mid}deg)`;
+
+      const span = document.createElement('span');
+      span.textContent = cat.short;
+      span.style.left = `${midRadius}px`;
+      span.style.textAlign = 'center';
+      span.style.transform = `translate(-50%, -50%) ${flip ? 'rotate(180deg)' : ''}`;
+      if(cat.jackpot){ span.style.fontSize = '0.46rem'; span.style.width = '40px'; }
+
+      label.appendChild(span);
+      wheelInner.appendChild(label);
+    });
+  }
+
+  function renderQuiz(catIndex){
+    const cat = categories[catIndex];
+
+    resultBadge.textContent = cat.name.toUpperCase();
+    quizOptions.innerHTML = '';
+    quizExplain.hidden = true;
+    quizExplain.innerHTML = '';
+
+    const prizeBadge = document.getElementById('prizeBadge');
+
+    if(cat.jackpot){
+      prizeBadge.hidden = true;
+      resultText.textContent = "🎉 JACKPOT! Mystery prize — come see our booth staff to claim it!";
+      launchConfetti();
+      finalizePlay();
+      return;
+    }
+
+    prizeBadge.hidden = false;
+    prizeBadge.textContent = `🎁 You win: ${cat.prize}`;
+
+    const q = cat.questions[Math.floor(Math.random() * cat.questions.length)];
+    resultText.textContent = q.q;
+
+    const opts = q.type === 'mc' ? q.options : [{key:'True',text:'True'},{key:'False',text:'False'}];
+
+    opts.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-option';
+      btn.type = 'button';
+      btn.dataset.key = opt.key;
+      btn.textContent = q.type === 'mc' ? `${opt.key}) ${opt.text}` : opt.text;
+      btn.addEventListener('click', () => selectAnswer(btn, q));
+      quizOptions.appendChild(btn);
+    });
+  }
+
+  function launchConfetti(){
+    const layer = document.createElement('div');
+    layer.className = 'confetti-layer';
+    document.body.appendChild(layer);
+
+    const emojis = ['🎉','🎊','✨','⭐','🥳'];
+    const pieceCount = 40;
+
+    for(let i=0;i<pieceCount;i++){
+      const piece = document.createElement('span');
+      piece.className = 'confetti-piece';
+      piece.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+
+      const angle = Math.random()*Math.PI*2;
+      const dist = 100 + Math.random()*220;
+      const tx = Math.cos(angle)*dist;
+      const ty = Math.sin(angle)*dist + 100; // slight downward drift for a "falling" feel
+      const rot = (Math.random()*720 - 360);
+
+      piece.style.setProperty('--tx', `${tx}px`);
+      piece.style.setProperty('--ty', `${ty}px`);
+      piece.style.setProperty('--rot', `${rot}deg`);
+      piece.style.animationDelay = `${Math.random()*0.2}s`;
+
+      layer.appendChild(piece);
+    }
+
+    setTimeout(() => layer.remove(), 2000);
+  }
+
+  function selectAnswer(btn, q){
+    const allBtns = quizOptions.querySelectorAll('.quiz-option');
+    allBtns.forEach(b => b.disabled = true);
+
+    const chosenKey = btn.dataset.key;
+    const isCorrect = chosenKey === q.correct;
+    btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+    if(!isCorrect){
+      const correctBtn = quizOptions.querySelector(`[data-key="${q.correct}"]`);
+      if(correctBtn) correctBtn.classList.add('correct');
+    }
+
+    const correctLabel = q.type === 'mc'
+      ? `${q.correct}) ${q.options.find(o => o.key === q.correct).text}`
+      : q.correct;
+
+    quizExplain.hidden = false;
+    quizExplain.innerHTML = isCorrect
+      ? `<strong>Correct!</strong>${q.explain ? ' ' + q.explain : ''}`
+      : `<strong>Answer: ${correctLabel}</strong>${q.explain ? ' — ' + q.explain : ''}`;
+
+    finalizePlay();
+  }
+
+  let currentRotation = 0;
+  let spinning = false;
+  let pendingWinningIndex = null;
+  let revealTimer = null;
+
+  function spin(){
+    if(spinning) return;
+    spinning = true;
+    spinBtn.disabled = true;
+    quizOptions.querySelectorAll('.quiz-option').forEach(b => b.disabled = true);
+
+    const randomAngle = Math.random() * 360;
+    const winningIndex = segments.findIndex(seg => randomAngle >= seg.start && randomAngle < seg.end);
+    const winningMid = segments[winningIndex].mid;
+
+    const extraSpins = 5 + Math.floor(Math.random()*2);
+    const targetOffset = (360 - winningMid + 360) % 360;
+    const totalRotation = currentRotation + extraSpins*360 + targetOffset - (currentRotation % 360);
+
+    currentRotation = totalRotation;
+    pendingWinningIndex = winningIndex;
+    wheelInner.style.transform = `rotate(${currentRotation}deg)`;
+
+    // Fallback in case the browser doesn't fire transitionend (some mobile
+    // browsers skip it if the tab loses focus mid-animation).
+    clearTimeout(revealTimer);
+    revealTimer = setTimeout(revealResult, 4000);
+  }
+
+  function revealResult(){
+    if(!spinning) return;
+    clearTimeout(revealTimer);
+    renderQuiz(pendingWinningIndex);
+    resultCard.hidden = false;
+    spinning = false;
+    lockSpinning();
+  }
+
+  wheelInner.addEventListener('transitionend', (e) => {
+    if(e.propertyName !== 'transform') return;
+    revealResult();
+  });
+
+  function lockSpinning(){
+    spinBtn.disabled = true;
+    try{ localStorage.setItem('cyberWheelPlayed', 'true'); } catch(e){ /* ignore */ }
+  }
+
+  function finalizePlay(){
+    const lockedNote = document.getElementById('spinLockedNote');
+    if(lockedNote) lockedNote.hidden = false;
+  }
+
+  spinBtn.addEventListener('click', spin);
+
+  window.addEventListener('resize', buildWheel);
+  window.requestAnimationFrame(buildWheel);
+
+  const qrBtn = document.getElementById('qrBtn');
+  const qrPanel = document.getElementById('qrPanel');
+  const qrNote = document.getElementById('qrNote');
+  let qrGenerated = false;
+
+  qrBtn.addEventListener('click', () => {
+    if(!qrGenerated){
+      if(window.location.protocol === 'file:'){
+        qrNote.className = 'qr-warning';
+        qrNote.textContent = "This page is opened as a local file, so the code below won't work on other phones. Upload this file to a host (Netlify, GitHub Pages, etc.), then open it from that real web address and tap this button again.";
+      } else {
+        new QRCode(document.getElementById('qrcode'), {
+          text: window.location.href,
+          width: 200,
+          height: 200,
+          colorDark: '#1A1A1A',
+          colorLight: '#ffffff'
+        });
+        qrNote.className = 'qr-note';
+        qrNote.textContent = 'Scan this to open the wheel on your phone. Print it for your booth sign.';
+      }
+      qrGenerated = true;
+    }
+    qrPanel.hidden = !qrPanel.hidden;
+    qrBtn.textContent = qrPanel.hidden ? 'Get QR code for this page' : 'Hide QR code';
+  });
+
+  // ---- Registration gate ----
+  // If attendees will register on THEIR OWN phones (recommended for a booth),
+  // paste a free Formspree endpoint below (e.g. 'https://formspree.io/f/xxxxxxx')
+  // so every submission lands in one place you can see as admin, regardless of
+  // which device sent it. Without this, entries only save on each visitor's
+  // own device and the Admin panel below can't see them from yours.
+  const FORMSPREE_ENDPOINT = '';
+
+  const registerCard = document.getElementById('registerCard');
+  const alreadyPlayedCard = document.getElementById('alreadyPlayedCard');
+  const gameSection = document.getElementById('gameSection');
+  const regName = document.getElementById('regName');
+  const regEmail = document.getElementById('regEmail');
+  const regSubmit = document.getElementById('regSubmit');
+  const registerNote = document.getElementById('registerNote');
+
+  function hasAlreadyPlayed(){
+    try{ return localStorage.getItem('cyberWheelPlayed') === 'true'; }
+    catch(e){ return false; }
+  }
+
+  if(hasAlreadyPlayed()){
+    registerCard.hidden = true;
+    gameSection.hidden = true;
+    alreadyPlayedCard.hidden = false;
+  }
+
+  function isValidEmail(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function saveEntryLocally(entry){
+    try{
+      const entries = JSON.parse(localStorage.getItem('cyberWheelEntries') || '[]');
+      entries.push(entry);
+      localStorage.setItem('cyberWheelEntries', JSON.stringify(entries));
+    } catch(e){ /* localStorage unavailable, ignore */ }
+  }
+
+  regSubmit.addEventListener('click', async () => {
+    const name = regName.value.trim();
+    const email = regEmail.value.trim();
+
+    if(!name){
+      registerNote.textContent = 'Please enter your name.';
+      return;
+    }
+    if(!isValidEmail(email)){
+      registerNote.textContent = 'Please enter a valid email address.';
+      return;
+    }
+    registerNote.textContent = '';
+    regSubmit.disabled = true;
+    regSubmit.textContent = 'Starting...';
+
+    const entry = { name, email, time: new Date().toISOString() };
+    saveEntryLocally(entry);
+
+    if(FORMSPREE_ENDPOINT){
+      try{
+        await fetch(FORMSPREE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(entry)
+        });
+      } catch(e){ /* don't block gameplay if this fails */ }
+    }
+
+    registerCard.hidden = true;
+    gameSection.hidden = false;
+    window.requestAnimationFrame(buildWheel);
+  });
+
+  // ---- Admin panel ----
+  // Change this password before printing your QR code for the event.
+  const ADMIN_PASSWORD = 'cyberfair2026';
+
+  const adminLink = document.getElementById('adminLink');
+  const adminPanel = document.getElementById('adminPanel');
+  const adminPassword = document.getElementById('adminPassword');
+  const adminUnlock = document.getElementById('adminUnlock');
+  const adminGate = document.getElementById('adminGate');
+  const adminListWrap = document.getElementById('adminListWrap');
+  const adminCount = document.getElementById('adminCount');
+  const adminEntries = document.getElementById('adminEntries');
+  const adminExport = document.getElementById('adminExport');
+  const adminClear = document.getElementById('adminClear');
+
+  function getLocalEntries(){
+    try{
+      return JSON.parse(localStorage.getItem('cyberWheelEntries') || '[]');
+    } catch(e){ return []; }
+  }
+
+  function renderAdminList(){
+    const entries = getLocalEntries();
+    adminCount.textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} on this device.`;
+    adminEntries.innerHTML = '';
+    entries.slice().reverse().forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'admin-entry';
+      const when = new Date(entry.time);
+      row.innerHTML = `<div class="name"></div><div class="email"></div><div class="time"></div>`;
+      row.querySelector('.name').textContent = entry.name;
+      row.querySelector('.email').textContent = entry.email;
+      row.querySelector('.time').textContent = isNaN(when) ? '' : when.toLocaleString();
+      adminEntries.appendChild(row);
+    });
+  }
+
+  adminLink.addEventListener('click', () => {
+    adminPanel.hidden = !adminPanel.hidden;
+  });
+
+  adminUnlock.addEventListener('click', () => {
+    if(adminPassword.value !== ADMIN_PASSWORD){
+      adminGate.textContent = 'Incorrect password.';
+      return;
+    }
+    adminGate.textContent = 'Entries are only visible on the device they were saved on.';
+    adminPassword.hidden = true;
+    adminUnlock.hidden = true;
+    adminListWrap.hidden = false;
+    renderAdminList();
+  });
+
+  adminExport.addEventListener('click', () => {
+    const entries = getLocalEntries();
+    const rows = [['Name','Email','Time'], ...entries.map(e => [e.name, e.email, e.time])];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cyber-wheel-entries.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  adminClear.addEventListener('click', () => {
+    if(!confirm('Clear all saved entries on this device? This cannot be undone.')) return;
+    localStorage.removeItem('cyberWheelEntries');
+    renderAdminList();
+  });
+
+  document.getElementById('adminResetLock').addEventListener('click', () => {
+    localStorage.removeItem('cyberWheelPlayed');
+    alert('Play lock cleared for this device. Reload the page to register and spin again.');
+  });
+</script>
+
+</body>
+</html>
